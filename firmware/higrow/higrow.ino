@@ -1,3 +1,9 @@
+// Build Options
+//#define USE_CHINESE_WEB
+//#define USE_SOFTAP_MODE
+//#define USE_18B20_TEMP_SENSOR
+//#define USE_MQTT
+
 #include <algorithm>
 #include <iostream>
 #include <Arduino.h>
@@ -12,17 +18,17 @@
 #include <DHT12.h>
 #include <Adafruit_BME280.h>
 #include <WiFiMulti.h>
-#include "esp_wifi.h"
-// mqtt
-#include <PubSubClient.h>
 
-// gonna try and clean this shit...
+#ifdef USE_MQTT
+#include "esp_wifi.h"
+#include <PubSubClient.h>
+#endif
+
 #include <ricou_iot.h>
 
-// #define SOFTAP_MODE
-// #define USE_18B20_TEMP_SENSOR
-// #define USE_CHINESE_WEB
-
+// WIFI
+#define WIFI_SSID   "Ricou"
+#define WIFI_PASSWD "you wifi password"
 // MQTT
 const char* mqtt_server = "nina.lan";
 const char* mqtt_topic = "ricou/plant/2";
@@ -31,32 +37,22 @@ const char* mqtt_clientID = "plant_sensor_2";
 
 
 
-#define I2C_SDA             25
-#define I2C_SCL             26
-#define DHT12_PIN           16
-#define BAT_ADC             33
-#define SALT_PIN            34
-#define SOIL_PIN            32
-#define BOOT_PIN            0
-#define POWER_CTRL          4
-#define USER_BUTTON         35
-#define DS18B20_PIN         21                  //18b20 data pin
 
 
 BH1750 lightMeter(0x23); //0x23
 Adafruit_BME280 bmp;     //0x77
-DHT12 dht12(DHT12_PIN, true);
+DHT12 dht12(TTG_HG_DHT12_PIN, true);
 AsyncWebServer server(80);
-Button2 button(BOOT_PIN);
-Button2 useButton(USER_BUTTON);
+Button2 button(TTG_HG_BOOT_PIN);
+Button2 useButton(TTG_HG_USER_BUTTON);
 WiFiMulti multi;
-DS18B20 temp18B20(DS18B20_PIN);
-
+#ifdef UDE_18B20_TEMP_SENSOR
+DS18B20 temp18B20(TTG_HG_DS18B20_PIN);
+#endif
+#ifdef USE_MQTT
 WiFiClient wifiClient;
 PubSubClient mqtt_client(mqtt_server, 1883, wifiClient); // 1883 is the listener port for the Broker
-
-#define WIFI_SSID   "Ricou"
-#define WIFI_PASSWD "you wifi password"
+#endif
 
 
 
@@ -103,37 +99,19 @@ bool serverBegin()
     }
     // Add Respective Cards
     if (bme_found) {
-#ifdef USE_CHINESE_WEB
-        ESPDash.addTemperatureCard("temp", "BME传感器温度/C", 0, 0);
-        ESPDash.addNumberCard("press", "BME传感器压力/hPa", 0);
-        ESPDash.addNumberCard("alt", "BME传感器高度/m", 0);
-#else
-        ESPDash.addTemperatureCard("temp", "BME Temperature/C", 0, 0);
-        ESPDash.addNumberCard("press", "BME Pressure/hPa", 0);
-        ESPDash.addNumberCard("alt", "BME Altitude/m", 0);
-#endif
+      ESPDash.addTemperatureCard("temp", TTG_HG_LABEL_TEMP, 0, 0);
+      ESPDash.addNumberCard("press", TTG_HG_LABEL_PRESS, 0);
+      ESPDash.addNumberCard("alt", TTG_HG_LABEL_ALT, 0);
     }
-#ifdef USE_CHINESE_WEB
-    ESPDash.addTemperatureCard("temp2", "DHT12传感器温度/C", 0, 0);
-    ESPDash.addHumidityCard("hum2", "DHT12传感器湿度/%", 0);
-    ESPDash.addNumberCard("lux", "BH1750传感器亮度/lx", 0);
-    ESPDash.addHumidityCard("soil", "土壤湿度", 0);
-    ESPDash.addNumberCard("salt", "水分百分比", 0);
-    ESPDash.addNumberCard("batt", "电池电压/mV", 0);
-#else
-    ESPDash.addTemperatureCard("temp2", "DHT Temperature/C", 0, 0);
-    ESPDash.addHumidityCard("hum2", "DHT Humidity/%", 0);
-    ESPDash.addNumberCard("lux", "BH1750/lx", 0);
-    ESPDash.addHumidityCard("soil", "Soil", 0);
-    ESPDash.addNumberCard("salt", "Salt", 0);
-    ESPDash.addNumberCard("batt", "Battery/mV", 0);
-#endif
-
-
+    ESPDash.addTemperatureCard("temp2", TTG_HG_LABEL_TEMP2, 0, 0);
+    ESPDash.addHumidityCard("hum2", TTG_HG_LABEL_HUM2, 0);
+    ESPDash.addNumberCard("lux", TTG_HG_LABEL_LUX, 0);
+    ESPDash.addHumidityCard("soil", TTG_HG_LABEL_SOIL, 0);
+    ESPDash.addNumberCard("salt", TTG_HG_LABEL_SALT, 0);
+    ESPDash.addNumberCard("batt", TTG_HG_LABEL_BAT, 0);
 #ifdef USE_18B20_TEMP_SENSOR
-    ESPDash.addTemperatureCard("temp3", "18B20温度/C", 0, 0);
+    ESPDash.addTemperatureCard("temp3", TTG_HG_LABEL_TEMP3, 0, 0);
 #endif
-    ESPDash.addTemperatureCard("temp3", "18B20 Temperature/C", 0, 0);
     server.begin();
     MDNS.addService("http", "tcp", 80);
     return true;
@@ -143,7 +121,7 @@ void setup()
 {
     Serial.begin(115200);
 
-#ifdef SOFTAP_MODE
+#ifdef USE_SOFTAP_MODE
     Serial.println("123Configuring access point...");
     uint8_t mac[6];
     char buff[128];
@@ -173,24 +151,25 @@ void setup()
         Serial.println(WiFi.localIP());
     }
 #endif
-
+#ifdef USE_MQTT
     if (mqtt_client.connect(mqtt_clientID)) {
       Serial.println("Connected to MQTT Broker!");
     } 
     else {
       Serial.println("Connection to MQTT Broker failed...");
     }
+#endif
 
     button.setLongClickHandler(smartConfigStart);
     useButton.setLongClickHandler(sleepHandler);
 
-    Wire.begin(I2C_SDA, I2C_SCL);
+    Wire.begin(TTG_HG_I2C_SDA, TTG_HG_I2C_SCL);
 
     dht12.begin();
 
     //! Sensor power control pin , use deteced must set high
-    pinMode(POWER_CTRL, OUTPUT);
-    digitalWrite(POWER_CTRL, 1);
+    pinMode(TTG_HG_POWER_CTRL_PIN, OUTPUT);
+    digitalWrite(TTG_HG_POWER_CTRL_PIN, 1);
     delay(1000);
 
     if (!bmp.begin()) {
@@ -201,9 +180,9 @@ void setup()
     }
 
     if (lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE)) {
-        Serial.println(F("BH1750 Advanced begin"));
+        Serial.println(F("BH1750: successfully initialized"));
     } else {
-        Serial.println(F("Error initialising BH1750"));
+        Serial.println(F("BH1750: failed initialization"));
     }
 
 
@@ -217,7 +196,7 @@ uint32_t readSalt()
     uint16_t array[120];
 
     for (int i = 0; i < samples; i++) {
-        array[i] = analogRead(SALT_PIN);
+        array[i] = analogRead(TTG_HG_SALT_ADC_PIN);
         delay(2);
     }
     std::sort(array, array + samples);
@@ -231,14 +210,14 @@ uint32_t readSalt()
 
 uint16_t readSoil()
 {
-    uint16_t soil = analogRead(SOIL_PIN);
+    uint16_t soil = analogRead(TTG_HG_SOIL_ADC_PIN);
     return map(soil, 0, 4095, 100, 0);
 }
 
 float readBattery()
 {
     int vref = 1100;
-    uint16_t volt = analogRead(BAT_ADC);
+    uint16_t volt = analogRead(TTG_HG_BAT_ADC_PIN);
     float battery_voltage = ((float)volt / 4095.0) * 2.0 * 3.3 * (vref);
     return battery_voltage;
 }
@@ -285,6 +264,7 @@ void loop()
             float temp = temp18B20.temp();
             ESPDash.updateTemperatureCard("temp3", (int)temp);
 #endif
+#ifdef USE_MQTT
             uint8_t foo[128];
             memcpy(foo, &lux, sizeof(float));
             memcpy(&foo[4], &t12, sizeof(float));
@@ -293,6 +273,7 @@ void loop()
             memcpy(&foo[16], &salt, sizeof(uint32_t));
             memcpy(&foo[20], &bat, sizeof(float));
             mqtt_client.publish(mqtt_topic, foo, 24, false);
+#endif
        }
     }
 }
