@@ -3,6 +3,13 @@
 
 #include <Arduino.h>
 
+// TTGO Higrow pin assigment
+#define TTG_HG_POWER_CTRL           4        // sensors powering ??
+#define TTG_HG_DHT12_PIN           16        // DHT12 pin (one wire)
+#define TTG_HG_DS18B20_PIN         21        // 18b20 data pin
+#define TTG_HG_I2C_SDA             25        // I2C pins
+#define TTG_HG_I2C_SCL             26
+
 // Simple ds18b20 class
 class DS18B20
 {
