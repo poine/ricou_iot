@@ -1,8 +1,8 @@
 // Build Options
 //#define USE_CHINESE_WEB
 //#define USE_SOFTAP_MODE
-//#define USE_18B20_TEMP_SENSOR
-//#define USE_MQTT
+#define USE_18B20_TEMP_SENSOR
+#define USE_MQTT
 
 #include <algorithm>
 #include <iostream>
@@ -46,12 +46,12 @@ AsyncWebServer server(80);
 Button2 button(TTG_HG_BOOT_PIN);
 Button2 useButton(TTG_HG_USER_BUTTON);
 WiFiMulti multi;
-#ifdef UDE_18B20_TEMP_SENSOR
+#ifdef USE_18B20_TEMP_SENSOR
 DS18B20 temp18B20(TTG_HG_DS18B20_PIN);
 #endif
 #ifdef USE_MQTT
 WiFiClient wifiClient;
-PubSubClient mqtt_client(mqtt_server, 1883, wifiClient); // 1883 is the listener port for the Broker
+PubSubClient mqtt_client(mqtt_server, 1883, wifiClient);
 #endif
 
 
@@ -182,7 +182,7 @@ void setup()
     if (lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE)) {
         Serial.println(F("BH1750: successfully initialized"));
     } else {
-        Serial.println(F("BH1750: failed initialization"));
+        Serial.println(F("BH1750: failed to initialize"));
     }
 
 
@@ -261,7 +261,7 @@ void loop()
 
 #ifdef USE_18B20_TEMP_SENSOR
             //Single data stream upload
-            float temp = temp18B20.temp();
+            float temp = temp18B20.read_temp_as_float();
             ESPDash.updateTemperatureCard("temp3", (int)temp);
 #endif
 #ifdef USE_MQTT
