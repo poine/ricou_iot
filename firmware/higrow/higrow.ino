@@ -28,9 +28,9 @@
 
 // WIFI
 #define WIFI_SSID   "Ricou"
-#define WIFI_PASSWD "you wifi password"
+#define WIFI_PASSWD "NoPassword"
 // MQTT
-const char* mqtt_server = "nina.lan";
+const char* mqtt_server = "nhop.lan";
 const char* mqtt_topic = "ricou/plant/2";
 const char* mqtt_clientID = "plant_sensor_2";
 

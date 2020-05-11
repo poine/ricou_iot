@@ -7,13 +7,17 @@ import pdb
 
 MQTT_CLIENT_ID = 'PythonLogger'
 MQTT_TOPIC = 'ricou/plant'
-MQTT_ADDRESS = 'nina.lan'
+MQTT_ADDRESS = 'nhop.lan'
 MQTT_PORT = 1883
 
-INFLUXDB_ADDRESS = 'nhop'
+INFLUXDB_ADDRESS = 'nhop.lan'
 INFLUXDB_USER = 'root'
 INFLUXDB_PASSWORD = 'root'
 INFLUXDB_DATABASE = 'ricou_plants'
+'''
+Listen to plant messages on MQTT and stores their content in an influxdb database
+FIXME: doesn't handle database disconnections
+'''
 
 class SensorData(NamedTuple):
     location: str
