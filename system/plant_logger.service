@@ -2,6 +2,8 @@
 Description=Plant Logger.
 Requires=influxd.service
 After=influxd.service
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
