@@ -1,8 +1,5 @@
-// Build Options
-//#define USE_CHINESE_WEB
-//#define USE_SOFTAP_MODE
-#define USE_18B20_TEMP_SENSOR
-#define USE_MQTT
+#include <ricou_iot_cfg_plant1.h>
+//#include <ricou_iot_cfg_plant2.h>
 
 #include <algorithm>
 #include <iostream>
@@ -19,22 +16,12 @@
 #include <Adafruit_BME280.h>
 #include <WiFiMulti.h>
 
-#ifdef USE_MQTT
-#include "esp_wifi.h"
-#include <PubSubClient.h>
-#endif
+//#ifdef USE_MQTT
+//#include "esp_wifi.h"
+//#include <PubSubClient.h>
+//#endif
 
 #include <ricou_iot.h>
-
-// WIFI
-#define WIFI_SSID   "Ricou"
-#define WIFI_PASSWD "NoPassword"
-// MQTT
-const char* mqtt_server = "nhop.lan";
-const char* mqtt_topic = "ricou/plant/2";
-const char* mqtt_clientID = "plant_sensor_2";
-
-
 
 
 
@@ -50,8 +37,7 @@ WiFiMulti multi;
 DS18B20 temp18B20(TTG_HG_DS18B20_PIN);
 #endif
 #ifdef USE_MQTT
-WiFiClient wifiClient;
-PubSubClient mqtt_client(mqtt_server, 1883, wifiClient);
+HigrowMqtt _mqtt(MQTT_SERVER, MQTT_PORT);
 #endif
 
 
@@ -152,12 +138,7 @@ void setup()
     }
 #endif
 #ifdef USE_MQTT
-    if (mqtt_client.connect(mqtt_clientID)) {
-      Serial.println("Connected to MQTT Broker!");
-    } 
-    else {
-      Serial.println("Connection to MQTT Broker failed...");
-    }
+    //      _mqtt.connect(MQTT_CLIENT_ID);  // not needed, checked and dealt with on transmit
 #endif
 
     button.setLongClickHandler(smartConfigStart);
@@ -265,14 +246,14 @@ void loop()
             ESPDash.updateTemperatureCard("temp3", (int)temp);
 #endif
 #ifdef USE_MQTT
-            uint8_t foo[128];
-            memcpy(foo, &lux, sizeof(float));
-            memcpy(&foo[4], &t12, sizeof(float));
-            memcpy(&foo[8], &h12, sizeof(float));
-            memcpy(&foo[12], &soil, sizeof(uint16_t));
-            memcpy(&foo[16], &salt, sizeof(uint32_t));
-            memcpy(&foo[20], &bat, sizeof(float));
-            mqtt_client.publish(mqtt_topic, foo, 24, false);
+              struct HigrowMeas vals;
+              vals.lux = lux;
+              vals.t12 = t12;
+              vals.h12 = h12;
+              vals.soil = soil;
+              vals.salt = salt;
+              vals.bat = bat;
+              _mqtt.publish1(MQTT_CLIENT_ID, MQTT_TOPIC, &vals);
 #endif
        }
     }

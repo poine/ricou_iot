@@ -1,7 +1,8 @@
 # ricou_iot
 Putting sensors in my home
 
-
+# FIXME
+plant_logger does not handle network down/up
 
 ## Installation
 

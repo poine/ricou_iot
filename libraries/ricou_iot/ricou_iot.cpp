@@ -8,6 +8,44 @@ HigrowWebServer::HigrowWebServer() {
 
 }
 
+//
+// MQTT
+//
+HigrowMqtt::HigrowMqtt(const char* addr, uint16_t port):
+  _wifi_client(),
+  _mqtt_client(addr, port, _wifi_client) {
+
+}
+
+boolean HigrowMqtt::connect(const char* mqtt_client_id) {
+  return _mqtt_client.connect(mqtt_client_id);
+}
+
+boolean HigrowMqtt::publish(const char* topic, struct HigrowMeas* vals) {
+  uint8_t buff[128];
+  memcpy(buff, &vals->lux, sizeof(float));
+  memcpy(&buff[4], &vals->t12, sizeof(float));
+  memcpy(&buff[8], &vals->h12, sizeof(float));
+  memcpy(&buff[12], &vals->soil, sizeof(uint16_t));
+  memcpy(&buff[16], &vals->salt, sizeof(uint32_t));
+  memcpy(&buff[20], &vals->bat, sizeof(float));
+  return _mqtt_client.publish(topic, buff, 24, false);
+}
+
+boolean HigrowMqtt::publish1(const char* mqtt_client_id, const char* topic, struct HigrowMeas* vals) {
+  boolean connected = _mqtt_client.connected();
+  if (!connected)
+    connected = connect(mqtt_client_id);
+  if (connected)
+    return publish(topic, vals);
+  else return false;
+}
+
+
+
+//
+// 
+//
 DS18B20::DS18B20(int gpio) {
   pin = gpio;
 }

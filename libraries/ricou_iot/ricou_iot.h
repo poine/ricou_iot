@@ -3,6 +3,9 @@
 
 #include <Arduino.h>
 
+#include <WiFiMulti.h>
+#include <PubSubClient.h>
+
 // TTGO Higrow pin assigment
 #define TTG_HG_BOOT_PIN             0
 #define TTG_HG_POWER_CTRL_PIN       4        // sensors powering ??
@@ -40,6 +43,16 @@
 #define TTG_HG_LABEL_TEMP3  "18B20 Temperature/C"
 #endif // !USE_CHINESE_WEB
 
+
+struct HigrowMeas {
+  float lux;
+  float t12;
+  float h12;
+  uint16_t soil;
+  uint32_t salt;
+  float bat;
+};
+
 class HigrowApp {
  public:
   HigrowApp();
@@ -50,9 +63,19 @@ class HigrowWebServer {
   HigrowWebServer();
 };
 
-class HigrowMqttServer {
+
+//
+// MQTT transactions
+//
+class HigrowMqtt {
  public:
-  HigrowMqttServer();
+  HigrowMqtt(const char*, uint16_t);
+  boolean connect(const char* mqtt_client_id);
+  boolean publish(const char* topic, struct HigrowMeas* vals);
+  boolean publish1(const char* mqtt_client_id, const char* topic, struct HigrowMeas* vals);
+ private:
+  WiFiClient _wifi_client;
+  PubSubClient _mqtt_client;
 };
 
 
