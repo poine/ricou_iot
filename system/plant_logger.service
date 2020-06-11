@@ -1,0 +1,13 @@
+[Unit]
+Description=Plant Logger.
+Requires=influxd.service
+After=influxd.service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/poine/work/ricou_iot/log_sensors.py
+
+[Install]
+WantedBy=multi-user.target
