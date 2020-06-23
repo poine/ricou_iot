@@ -14,6 +14,9 @@ INFLUXDB_ADDRESS = 'nhop.lan'
 INFLUXDB_USER = 'root'
 INFLUXDB_PASSWORD = 'root'
 INFLUXDB_DATABASE = 'ricou_plants'
+
+PLANT_NB = 4
+
 '''
 Listen to plant messages on MQTT and stores their content in an influxdb database
 FIXME: doesn't handle database disconnections
@@ -29,8 +32,8 @@ class MyApp:
         self.mqtt_client = mqtt.Client(MQTT_CLIENT_ID)
         self.mqtt_client.on_message = self.on_message
         self.mqtt_client.connect(MQTT_ADDRESS, MQTT_PORT)
-        for i in range(1,3):
-            self.mqtt_client.subscribe(MQTT_TOPIC+'/{}'.format(i))
+        for i in range(PLANT_NB):
+            self.mqtt_client.subscribe(MQTT_TOPIC+'/{}'.format(i+1))
 
         self.influxdb_client = InfluxDBClient(INFLUXDB_ADDRESS, 8086, INFLUXDB_USER, INFLUXDB_PASSWORD, None)
         databases = self.influxdb_client.get_list_database()
