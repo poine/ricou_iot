@@ -1,13 +1,123 @@
 #include "ricou_iot.h"
 
+void print_meas(uint32_t stamp, const struct HigrowMeas* meas) {
+  char buf[128];
+  const char* fmt = "loop: % 4d lux: %.1f temp: %.1f C hum: %.1f %% soil: %d salt: %d bat: %.0f";
+  sprintf(buf, fmt, stamp, meas->lux, meas->t12, meas->h12, meas->soil, meas->salt, meas->bat);
+  Serial.println(buf);
+}
+
 HigrowApp::HigrowApp() {
 
 }
 
-HigrowWebServer::HigrowWebServer() {
 
+//
+// Network
+//
+
+HigrowNetwork::HigrowNetwork() {
 }
 
+boolean HigrowNetwork::connect(const char* ssid, const char* passwd) {
+  WiFi.begin(ssid, passwd);
+
+  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    Serial.println("WiFi connect fail!");
+    return false;
+  }
+  else { 
+    Serial.print("WiFi connected to ");
+    Serial.println(WiFi.localIP());
+    return true;
+  } 
+}
+
+
+
+//
+// Sensors
+//
+HigrowSensors::HigrowSensors():
+  _light_meter(),
+  _dht12(TTG_HG_DHT12_PIN, true)  // One wire mode
+{}
+
+void HigrowSensors::setup() {
+  pinMode(TTG_HG_POWER_CTRL_PIN, OUTPUT); // Enable sensors power
+  digitalWrite(TTG_HG_POWER_CTRL_PIN, 1);
+  delay(10);                             // Wait a bit for sensors to be powered on
+  Wire.begin(TTG_HG_I2C_SDA, TTG_HG_I2C_SCL);
+ 
+  if (_light_meter.begin()) {
+    Serial.println(F("BH1750: successfully initialized"));
+  }
+  else {
+    Serial.println(F("BH1750: failed to initialize"));
+  }
+
+  _dht12.begin();
+}
+
+struct HigrowMeas* HigrowSensors::measurements() { return &_meas;}
+
+struct HigrowMeas* HigrowSensors::read() {
+  _meas.lux = _light_meter.readLightLevel();
+  _meas.t12 = _dht12.readTemperature();
+  _meas.h12 = _dht12.readHumidity();
+  uint16_t soil_adc = analogRead(TTG_HG_SOIL_ADC_PIN);
+  _meas.soil = map(soil_adc, 0, 4095, 100, 0);
+  _read_salt();
+  uint16_t bat_adc = analogRead(TTG_HG_BAT_ADC_PIN);
+  _meas.bat = (float)bat_adc / 4095.0 * 2.0 * 3.3 * 1100;
+  return &_meas;
+}
+
+void HigrowSensors::_read_salt() {
+  const uint8_t samples = 120;
+  uint32_t humi = 0;
+  uint16_t array[samples];
+
+  for (int i = 0; i < samples; i++) {
+    array[i] = analogRead(TTG_HG_SALT_ADC_PIN);
+    delay(2);
+  }
+  std::sort(array, array + samples);
+  for (int i = 1; i < samples-1; i++) {
+    //if (i == 0 || i == samples - 1)continue;
+    humi += array[i];
+  }
+  humi /= samples - 2;
+  _meas.salt = humi;
+}
+
+//
+// Web Dash
+//
+HigrowDash::HigrowDash():
+  _server(80) {
+}
+
+void HigrowDash::init() {
+  ESPDash.init(_server);
+  ESPDash.addTemperatureCard("temp2", TTG_HG_LABEL_TEMP2, 0, 0);
+  ESPDash.addHumidityCard("hum2", TTG_HG_LABEL_HUM2, 0);
+  ESPDash.addNumberCard("lux", TTG_HG_LABEL_LUX, 0);
+  ESPDash.addHumidityCard("soil", TTG_HG_LABEL_SOIL, 0);
+  ESPDash.addNumberCard("salt", TTG_HG_LABEL_SALT, 0);
+  ESPDash.addNumberCard("batt", TTG_HG_LABEL_BAT, 0);
+  _server.begin();
+}
+
+void HigrowDash::update(struct HigrowMeas* vals) {
+  ESPDash.updateTemperatureCard("temp2", (int)vals->t12);
+  ESPDash.updateHumidityCard("hum2", (int)vals->h12);
+  ESPDash.updateNumberCard("lux", (int)vals->lux);
+  ESPDash.updateHumidityCard("soil", (int)vals->soil);
+  ESPDash.updateNumberCard("salt", (int)vals->salt);
+  ESPDash.updateNumberCard("batt", (int)vals->bat);
+}
+ 
 //
 // MQTT
 //
@@ -44,7 +154,7 @@ boolean HigrowMqtt::publish1(const char* mqtt_client_id, const char* topic, stru
 
 
 //
-// 
+// DS18B20 thermometer
 //
 DS18B20::DS18B20(int gpio) {
   pin = gpio;

@@ -12,8 +12,8 @@ DHT12 dht12(TTG_HG_DHT12_PIN, true);   // One wire mode
 void setup() {
   Serial.begin(115200);                // Enable and configure serial port
   dht12.begin();                       // Initialize sensor
-  pinMode(TTG_HG_POWER_CTRL, OUTPUT);  // Enable sensors power
-  digitalWrite(TTG_HG_POWER_CTRL, 1);  //
+  pinMode(TTG_HG_POWER_CTRL_PIN, OUTPUT);  // Enable sensors power
+  digitalWrite(TTG_HG_POWER_CTRL_PIN, 1);  //
   delay(1000);                         // Wait a bit for sensors to be powered on
 }
 

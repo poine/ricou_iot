@@ -2,7 +2,7 @@
 
 Putting sensors in my home
 
-# FIXME
+## FIXME
 plant_logger does not handle network down/up
 
 ## Installation
@@ -28,6 +28,11 @@ plant_logger does not handle network down/up
    * sudo systemctl enable plant_logger.service
    * journalctl -u plant_logger.service
 
+
+   * systemctl list-units --type=service
+   * sudo systemctl status grafana-server
+   
+   
 ## Building Firmware
 
    * start arduino IDE

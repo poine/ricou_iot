@@ -2,13 +2,19 @@
 #define RICOU_IOT_H
 
 #include <Arduino.h>
-
+// MQTT
 #include <WiFiMulti.h>
 #include <PubSubClient.h>
+// Dash
+#include <ESPAsyncWebServer.h>
+#include <ESPDash.h>
+// Sensors
+#include <BH1750.h>
+#include <DHT12.h>
 
 // TTGO Higrow pin assigment
 #define TTG_HG_BOOT_PIN             0
-#define TTG_HG_POWER_CTRL_PIN       4        // sensors powering ??
+#define TTG_HG_POWER_CTRL_PIN       4        // sensors powering
 #define TTG_HG_DHT12_PIN           16        // DHT12 pin (one wire)
 #define TTG_HG_DS18B20_PIN         21        // 18b20 data pin
 #define TTG_HG_I2C_SDA             25        // I2C pins
@@ -52,17 +58,39 @@ struct HigrowMeas {
   uint32_t salt;
   float bat;
 };
+void print_meas(uint32_t stamp, const struct HigrowMeas* meas);
+
 
 class HigrowApp {
  public:
   HigrowApp();
 };
 
-class HigrowWebServer {
+//
+// Network
+//
+class HigrowNetwork {
  public:
-  HigrowWebServer();
+  HigrowNetwork();
+  boolean connect(const char* ssid, const char* passwd);
 };
 
+
+//
+// Sensors
+//
+class HigrowSensors {
+ public:
+  HigrowSensors();
+  void setup();
+  struct HigrowMeas* read();
+  struct HigrowMeas* measurements();
+ private:
+  BH1750 _light_meter;
+  DHT12 _dht12;
+  struct HigrowMeas _meas;
+  void _read_salt();
+};
 
 //
 // MQTT transactions
@@ -78,7 +106,18 @@ class HigrowMqtt {
   PubSubClient _mqtt_client;
 };
 
-
+//
+// Web Dash
+//
+class HigrowDash {
+ public:
+  HigrowDash();
+  void init();
+  void update(struct HigrowMeas* vals);
+  
+ private:
+  AsyncWebServer _server;
+};
 //
 // DS18B20 driver
 // Programmable Resolution 1-Wire Digital Thermometer 

@@ -9,11 +9,11 @@ uint32_t cnt = 0;
 BH1750 lightMeter(0x23); //0x23
 
 void setup() {
-  Serial.begin(115200);                // Enable and configure serial port
+  Serial.begin(115200);                   // Enable and configure serial port
 
-  pinMode(TTG_HG_POWER_CTRL, OUTPUT);  // Enable sensors power
-  digitalWrite(TTG_HG_POWER_CTRL, 1);  //
-  delay(1000);                         // Wait a bit for sensors to be powered on
+  pinMode(TTG_HG_POWER_CTRL_PIN, OUTPUT); // Enable sensors power
+  digitalWrite(TTG_HG_POWER_CTRL_PIN, 1); //
+  delay(1000);                            // Wait a bit for sensors to be powered on
 
   Wire.begin(TTG_HG_I2C_SDA, TTG_HG_I2C_SCL);
   
