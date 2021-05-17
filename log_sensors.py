@@ -6,7 +6,8 @@ from typing import NamedTuple
 import pdb
 
 MQTT_CLIENT_ID = 'PythonLogger'
-MQTT_TOPIC = 'ricou/plant'
+MQTT_TOPIC_PLANT = 'ricou/plant'
+MQTT_TOPIC_WATERING = 'ricou/watering/terrasse_s/status'
 #MQTT_ADDRESS = 'nhop.lan'
 MQTT_ADDRESS = 'ella.lan'
 MQTT_PORT = 1883
@@ -37,7 +38,8 @@ class MyApp:
         self.mqtt_client.connect(MQTT_ADDRESS, MQTT_PORT)
         print(f'connected to mqtt: {MQTT_ADDRESS}:{MQTT_PORT}')
         for i in range(PLANT_NB):
-            self.mqtt_client.subscribe(MQTT_TOPIC+'/{}'.format(i+1))
+            self.mqtt_client.subscribe(MQTT_TOPIC_PLANT+'/{}'.format(i+1))
+        self.mqtt_client.subscribe(MQTT_TOPIC_WATERING) # watering
 
         self.influxdb_client = InfluxDBClient(INFLUXDB_ADDRESS, 8086, INFLUXDB_USER, INFLUXDB_PASSWORD, None)
         print(f'connected to database host: {INFLUXDB_ADDRESS}:8086 as {INFLUXDB_USER}:{INFLUXDB_PASSWORD}')
@@ -53,18 +55,31 @@ class MyApp:
     def on_message(self, client, userdata, msg):
         #print('topic {}: ({}) {}'.format(msg.topic, len(msg.payload), str(msg.payload)))
         try:
-            datas = self._parse_msg(msg)
-            self._write_to_db(datas)
+            if msg.topic.startswith(MQTT_TOPIC_PLANT):
+                datas = self._parse_plant_msg(msg)
+                self._write_to_db(datas)
+            elif msg.topic.startswith(MQTT_TOPIC_WATERING):
+                datas = self._parse_watering_msg(msg)
+                self._write_to_db(datas)
+            else:
+                print('topic {}: ({}) {}'.format(msg.topic, len(msg.payload), str(msg.payload)))
         except:
-            print('parse error')
+            print('parse error: topic {}: ({}) {}'.format(msg.topic, len(msg.payload), str(msg.payload)))
         
-    def _parse_msg(self, msg):
+    def _parse_plant_msg(self, msg):
         location = msg.topic
         vals = struct.unpack('fffHIf', msg.payload)
-        print('{}: lux {:.1f} temp {:.1f} hum {:.1f} soil {:d} salt {:d} bat {:.1f}'.format(location, *vals))
+        #print('{}: lux {:.1f} temp {:.1f} hum {:.1f} soil {:d} salt {:d} bat {:.1f}'.format(location, *vals))
         datas = [SensorData(location, meas, val) for meas, val in zip(['lux', 'temp', 'hum', 'soil', 'salt', 'bat'], vals)]
         return datas
-        
+
+    def _parse_watering_msg(self, msg):
+        location = msg.topic
+        vals = struct.unpack('f', msg.payload)
+        print('{}: temp {:.1f}'.format(location, *vals))
+        datas = [SensorData(location, meas, val) for meas, val in zip(['temp'], vals)]
+        return datas
+
     def _write_to_db(self, sensor_data):
         json_body = [{'measurement': _d.measurement,
                       'tags': {'location': _d.location},

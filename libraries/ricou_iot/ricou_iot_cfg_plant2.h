@@ -12,7 +12,7 @@
 #define WIFI_PASSWD    NULL
 
 // MQTT
-#define MQTT_SERVER    "nhop.lan"
+#define MQTT_SERVER    "ella.lan"
 #define MQTT_PORT      1883
 #define MQTT_TOPIC     "ricou/plant/2"
 #define MQTT_CLIENT_ID "plant_sensor_2"
