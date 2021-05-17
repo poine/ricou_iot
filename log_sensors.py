@@ -7,13 +7,16 @@ import pdb
 
 MQTT_CLIENT_ID = 'PythonLogger'
 MQTT_TOPIC = 'ricou/plant'
-MQTT_ADDRESS = 'nhop.lan'
+#MQTT_ADDRESS = 'nhop.lan'
+MQTT_ADDRESS = 'ella.lan'
 MQTT_PORT = 1883
 
-INFLUXDB_ADDRESS = 'nhop.lan'
+#INFLUXDB_ADDRESS = 'nhop.lan'
+INFLUXDB_ADDRESS = 'ella.lan'
 INFLUXDB_USER = 'root'
 INFLUXDB_PASSWORD = 'root'
-INFLUXDB_DATABASE = 'ricou_plants'
+#INFLUXDB_DATABASE = 'ricou_plants'
+INFLUXDB_DATABASE = 'ricou_iot'
 
 PLANT_NB = 4
 
@@ -32,17 +35,19 @@ class MyApp:
         self.mqtt_client = mqtt.Client(MQTT_CLIENT_ID)
         self.mqtt_client.on_message = self.on_message
         self.mqtt_client.connect(MQTT_ADDRESS, MQTT_PORT)
+        print(f'connected to mqtt: {MQTT_ADDRESS}:{MQTT_PORT}')
         for i in range(PLANT_NB):
             self.mqtt_client.subscribe(MQTT_TOPIC+'/{}'.format(i+1))
 
         self.influxdb_client = InfluxDBClient(INFLUXDB_ADDRESS, 8086, INFLUXDB_USER, INFLUXDB_PASSWORD, None)
+        print(f'connected to database host: {INFLUXDB_ADDRESS}:8086 as {INFLUXDB_USER}:{INFLUXDB_PASSWORD}')
         databases = self.influxdb_client.get_list_database()
-        print(databases)
+        print(f'existing databases: {databases}')
         if len(list(filter(lambda x: x['name'] == INFLUXDB_DATABASE, databases))) == 0:
-            print('creating database')
+            print(f'creating empty database: {INFLUXDB_DATABASE}')
             self.influxdb_client.create_database(INFLUXDB_DATABASE)
         else:
-            print('found database')
+            print(f'found database: {INFLUXDB_DATABASE}')
         self.influxdb_client.switch_database(INFLUXDB_DATABASE)
         
     def on_message(self, client, userdata, msg):
